@@ -9,8 +9,17 @@ of data structures over objects.
 
 In Elm, we define as extensible records type classes for equality and ordering:
 
-    type alias Equality = {}
-    type alias Ordering = {}
+    type alias Equality a =
+        { a
+            | equals : Equality a -> Equality a -> Bool
+            , hashCode : Equality a -> Int
+        }
+
+
+    type alias Ordering a =
+        { a
+            | order : Ordering a -> Ordering a -> Order
+        }
 
 and let the user implement this API to provide the same set of features as above
 for this collections library to be based on.
