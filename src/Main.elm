@@ -16,4 +16,14 @@ import Buffer
 -}
 main : Html msg
 main =
-    Html.text "main"
+    let
+        example =
+            ToString.example
+
+        ex2 =
+            example.create [ "a", "b", "c" ]
+
+        ex3 =
+            example.debug ex2
+    in
+        Html.text "main"

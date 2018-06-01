@@ -1,16 +1,29 @@
 module ToString exposing (..)
 
 
-type alias SomeRecord a self =
+type alias Serializable a self =
     { a
         | toString : self -> String
+        , debug : self -> self
     }
 
 
-debug : String -> { a | toString : self -> String } -> { a | toString : self -> String }
-debug caption record =
+dbg : String -> { a | toString : self -> String } -> self -> self
+dbg caption toStringable val =
     let
         _ =
-            Debug.log caption (record.toString record)
+            Debug.log caption (toStringable.toString val)
     in
-        record
+        val
+
+
+type alias Example =
+    Serializable { create : List String -> List String } (List String)
+
+
+example : Example
+example =
+    { create = identity
+    , toString = \list -> (toString list)
+    , debug = \self -> dbg "example" example self
+    }
