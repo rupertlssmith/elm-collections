@@ -10,6 +10,7 @@ import Html exposing (Html)
 import Collections
 import ToString
 import Buffer
+import Traits
 
 
 {-| Main
