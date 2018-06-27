@@ -4,7 +4,7 @@ module Tree
         , Zipper
         , Path
           -- Tree operations
-        , empty
+        , singleton
         , zipper
         , map
           -- Zipper operations
@@ -88,16 +88,35 @@ type Zipper a
 
 
 getNextId : Id -> Id
+getNextId id =
+    id + 1
 
 
 
 -- Tree operations
 
 
-empty : Tree a
+singleton : a -> Tree a
+singleton datum =
+    Tree
+        { nextId = 0
+        , innerTree =
+            InnerTree
+                { id = 0
+                , datum = datum
+                , children = []
+                }
+        }
 
 
 zipper : Tree a -> Zipper a
+zipper (Tree tree) =
+    Zipper
+        { nextID = tree.nextId
+        , currentPath = []
+        , innerTree = tree.innerTree
+        , context = []
+        }
 
 
 map : (a -> b) -> Tree a -> Tree b

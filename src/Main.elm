@@ -11,6 +11,7 @@ import Collections
 import ToString
 import Buffer
 import Traits
+import Tree
 
 
 {-| Main
