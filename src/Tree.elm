@@ -84,44 +84,82 @@ type Zipper a
 
 
 
+-- Id operations
+
+
+getNextId : Id -> Id
+
+
+
 -- Tree operations
---, empty
---, zipper
---, map
---
+
+
+empty : Tree a
+
+
+zipper : Tree a -> Zipper a
+
+
+map : (a -> b) -> Tree a -> Tree b
+
+
+{-| This operation may be faster than `map` when the type of the tree does not change.
+It should be preferred to `map` in that case.
+-}
+update : (a -> a) -> Tree a -> Tree a
+
+
+
 -- Zipper operations
--- , goToChild
--- , goToRightMostChild
--- , goUp
--- , goLeft
--- , goRight
 
 
-{-| The Tree will only be able to be manipulated through TreeExplorer or Zipper.
-The Tree implementation data structure will not be exposed; it will be opaque.
-This is so that all work on the Tree can carry around a Focus context;
-in particular, a current id stamp used to label all nodes with unique references.
-Ataching and removing this Focus context will happen within the implementation
-and not something that the caller has to remember and pass around.
-
-Walking the zipper context back to the root will produce a Tree and a Path.
+{-| Walking the zipper context back to the root will produce a Tree and a Path.
 If just the Path is needed, that can be extracted efficiently, without walking
 back to the root, by the `getPath` function.
-
 -}
 goToRoot : Zipper a -> ( Tree a, Path )
 
 
+goToChild : Int -> Zipper a -> Maybe (Zipper a)
 
--- , goToNext
--- , goToPrevious
--- , goTo
--- , updateFocusDatum
--- , datum
--- , insertChild
--- , updateChildren
--- , getPath
---
+
+goUp : Zipper a -> Maybe (Zipper a)
+
+
+goLeft : Zipper a -> Maybe (Zipper a)
+
+
+goRight : Zipper a -> Maybe (Zipper a)
+
+
+goToNext : Zipper a -> Maybe (Zipper a)
+
+
+goToPrevious : Zipper a -> Maybe (Zipper a)
+
+
+goToRightMostChild : Zipper a -> Maybe (Zipper a)
+
+
+goTo : (a -> Bool) -> Zipper a -> Maybe (Zipper a)
+
+
+datum : Zipper a -> a
+
+
+updateFocusDatum : (a -> a) -> Zipper a -> Zipper a
+
+
+insertChild : a -> Zipper a -> Zipper a
+
+
+appendChild : a -> Zipper a -> Zipper a
+
+
+getPath : Zipper a -> Path
+
+
+
 -- Path operations
 
 
