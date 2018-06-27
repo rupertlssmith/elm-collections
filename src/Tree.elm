@@ -8,23 +8,23 @@ module Tree
         , zipper
         , map
           -- Zipper operations
-        , goToChild
-        , goToRightMostChild
+          --, goToChild
+          --, goToRightMostChild
         , goUp
-        , goLeft
-        , goRight
+          --, goLeft
+          --, goRight
         , goToRoot
-        , goToNext
-        , goToPrevious
-        , goTo
-        , updateFocusDatum
-        , datum
-        , insertChild
-        , updateChildren
-        , getPath
+          --, goToNext
+          --, goToPrevious
+          --, goTo
+          --, updateFocusDatum
+          --, datum
+          --, insertChild
+          --, updateChildren
+          --, getPath
           -- Path operations
-        , goToPath
-        , updateDatum
+          --, goToPath
+          --, updateDatum
         )
 
 -- It will be a multiway Tree implementation, not a binary tree.
@@ -32,10 +32,6 @@ module Tree
 -- Will save this for an optimized version:
 -- type alias NodeArray a =
 --     Array Int a
-
-
-type Path
-    = Path Id (List Int)
 
 
 type alias Id =
@@ -47,6 +43,20 @@ type Tree a
         { nextId : Id
         , innerTree : InnerTree a
         }
+
+
+type Zipper a
+    = Zipper
+        { nextId : Id
+        , currentPath : Path
+        , innerTree : InnerTree a
+        , crumbs : Breadcrumbs a
+        }
+
+
+type Path
+    = Path Id (List Int)
+    | EmptyPath
 
 
 type InnerTree a
@@ -65,22 +75,13 @@ type Context a
     = Context
         { id : Id
         , datum : a
-        , pre : Forest a
-        , post : Forest a
+        , before : Forest a
+        , after : Forest a
         }
 
 
 type alias Breadcrumbs a =
     List (Context a)
-
-
-type Zipper a
-    = Zipper
-        { nextId : Id
-        , currentPath : Path
-        , innerTree : InnerTree a
-        , crumbs : Breadcrumbs a
-        }
 
 
 
@@ -112,20 +113,49 @@ singleton datum =
 zipper : Tree a -> Zipper a
 zipper (Tree tree) =
     Zipper
-        { nextID = tree.nextId
-        , currentPath = []
+        { nextId = tree.nextId
+        , currentPath = EmptyPath
         , innerTree = tree.innerTree
-        , context = []
+        , crumbs = []
         }
 
 
+mapInner : (a -> b) -> InnerTree a -> InnerTree b
+mapInner fn (InnerTree tree) =
+    let
+        mappedDatum =
+            fn tree.datum
+
+        mappedChildren =
+            List.map (\child -> mapInner fn child) tree.children
+    in
+        (InnerTree
+            { id = tree.id
+            , datum = mappedDatum
+            , children = mappedChildren
+            }
+        )
+
+
 map : (a -> b) -> Tree a -> Tree b
+map fn (Tree tree) =
+    let
+        mappedInner =
+            mapInner fn tree.innerTree
+    in
+        (Tree
+            { nextId = tree.nextId
+            , innerTree = mappedInner
+            }
+        )
 
 
 {-| This operation may be faster than `map` when the type of the tree does not change.
 It should be preferred to `map` in that case.
 -}
 update : (a -> a) -> Tree a -> Tree a
+update fn tree =
+    map fn tree
 
 
 
@@ -136,70 +166,78 @@ update : (a -> a) -> Tree a -> Tree a
 If just the Path is needed, that can be extracted efficiently, without walking
 back to the root, by the `getPath` function.
 -}
-goToRoot : Zipper a -> ( Tree a, Path )
 
 
-goToChild : Int -> Zipper a -> Maybe (Zipper a)
+
+--goToRoot : Zipper a -> ( Tree a, Path )
+
+
+goToRoot (Zipper zipper) =
+    case zipper.crumbs of
+        [] ->
+            Just <| Zipper zipper
+
+        otherwise ->
+            goUp (Zipper zipper) |> Maybe.andThen goToRoot
+
+
+
+-- goToChild : Int -> Zipper a -> Maybe (Zipper a)
 
 
 goUp : Zipper a -> Maybe (Zipper a)
+goUp (Zipper zipper) =
+    case zipper.crumbs of
+        (Context { id, datum, before, after }) :: bs ->
+            Just
+                (Zipper
+                    { nextId = zipper.nextId
+                    , currentPath = zipper.currentPath
 
+                    --List.head zipper.currentPath |> Maybe.withDefault []
+                    , innerTree =
+                        InnerTree
+                            { id = 0
+                            , datum = datum
+                            , children = (before ++ [ zipper.innerTree ] ++ after)
+                            }
+                    , crumbs = bs
+                    }
+                )
 
-goLeft : Zipper a -> Maybe (Zipper a)
-
-
-goRight : Zipper a -> Maybe (Zipper a)
-
-
-goToNext : Zipper a -> Maybe (Zipper a)
-
-
-goToPrevious : Zipper a -> Maybe (Zipper a)
-
-
-goToRightMostChild : Zipper a -> Maybe (Zipper a)
-
-
-goTo : (a -> Bool) -> Zipper a -> Maybe (Zipper a)
-
-
-datum : Zipper a -> a
-
-
-updateFocusDatum : (a -> a) -> Zipper a -> Zipper a
-
-
-insertChild : a -> Zipper a -> Zipper a
-
-
-appendChild : a -> Zipper a -> Zipper a
-
-
-getPath : Zipper a -> Path
+        [] ->
+            Nothing
 
 
 
+-- goLeft : Zipper a -> Maybe (Zipper a)
+-- goRight : Zipper a -> Maybe (Zipper a)
+-- goToNext : Zipper a -> Maybe (Zipper a)
+-- goToPrevious : Zipper a -> Maybe (Zipper a)
+-- goToRightMostChild : Zipper a -> Maybe (Zipper a)
+-- goTo : (a -> Bool) -> Zipper a -> Maybe (Zipper a)
+-- datum : Zipper a -> a
+-- updateFocusDatum : (a -> a) -> Zipper a -> Zipper a
+-- insertChild : a -> Zipper a -> Zipper a
+-- appendChild : a -> Zipper a -> Zipper a
+-- getPath : Zipper a -> Path
 -- Path operations
+{- The Path and Tree can be recombined to recover a previous position in the tree.
+   walkPath : Path -> Tree a -> Maybe (Zipper a)
 
+   Every node will be marked with a unique id, so that re-walking the tree from a Path
+   can be confirmed as correct. Walking a Path will produce a Maybe.
 
-{-| The Path and Tree can be recombined to recover a previous position in the tree.
-walkPath : Path -> Tree a -> Maybe (Zipper a)
-
-Every node will be marked with a unique id, so that re-walking the tree from a Path
-can be confirmed as correct. Walking a Path will produce a Maybe.
-
-This allows events to be tagged with Paths which describe a return to a
-previously visited position within a tree, without capturing any other data
-associated with that node. This is to circumvent the stale data issue when
-a user is interacting with a tree.
+   This allows events to be tagged with Paths which describe a return to a
+   previously visited position within a tree, without capturing any other data
+   associated with that node. This is to circumvent the stale data issue when
+   a user is interacting with a tree.
 
 -}
-goToPath : Path -> Tree a -> Maybe (Zipper a)
-
-
-{-| The contents of nodes in the tree will be held in an `Array Id a`. Ids will be assigned
-sequentially. This will allow mapping by id without re-walking a Path possible. It will
-only be necessary to re-walk paths when adding new nodes into the tree, as this is the only
-situation when fresh ids will need to be generated.
+-- goToPath : Path -> Tree a -> Maybe (Zipper a)
+{- The contents of nodes in the tree will be held in an `Array Id a`. Ids will be assigned
+   sequentially. This will allow mapping by id without re-walking a Path possible. It will
+   only be necessary to re-walk paths when adding new nodes into the tree, as this is the only
+   situation when fresh ids will need to be generated.
 -}
-updateDatum : Path -> (a -> a) -> Tree a -> Tree a
+-- updateDatum : Path -> (a -> a) -> Tree a -> Tree a
