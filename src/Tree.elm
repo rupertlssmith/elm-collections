@@ -212,9 +212,37 @@ goUp (Zipper zipper) =
             Nothing
 
 
+goLeft : Zipper a -> Maybe (Zipper a)
+goLeft (Zipper zipper) =
+    case zipper.crumbs of
+        (Context { id, datum, before, after }) :: bs ->
+            case List.reverse before of
+                [] ->
+                    Nothing
 
--- goLeft : Zipper a -> Maybe (Zipper a)
--- goRight : Zipper a -> Maybe (Zipper a)
+                (InnerTree inner) :: rest ->
+                    Nothing
+
+        [] ->
+            Nothing
+
+
+goRight : Zipper a -> Maybe (Zipper a)
+goRight (Zipper zipper) =
+    case zipper.crumbs of
+        (Context { id, datum, before, after }) :: bs ->
+            case after of
+                [] ->
+                    Nothing
+
+                (InnerTree inner) :: rest ->
+                    Nothing
+
+        [] ->
+            Nothing
+
+
+
 -- goToNext : Zipper a -> Maybe (Zipper a)
 -- goToPrevious : Zipper a -> Maybe (Zipper a)
 -- goToRightMostChild : Zipper a -> Maybe (Zipper a)
