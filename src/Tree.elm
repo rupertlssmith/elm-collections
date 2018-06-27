@@ -56,7 +56,6 @@ type Zipper a
 
 type Path
     = Path Id (List Int)
-    | EmptyPath
 
 
 type InnerTree a
@@ -114,7 +113,10 @@ zipper : Tree a -> Zipper a
 zipper (Tree tree) =
     Zipper
         { nextId = tree.nextId
-        , currentPath = EmptyPath
+        , currentPath =
+            case tree.innerTree of
+                InnerTree inner ->
+                    Path inner.id []
         , innerTree = tree.innerTree
         , crumbs = []
         }
@@ -162,23 +164,20 @@ update fn tree =
 -- Zipper operations
 
 
-{-| Walking the zipper context back to the root will produce a Tree and a Path.
-If just the Path is needed, that can be extracted efficiently, without walking
-back to the root, by the `getPath` function.
+{-| Walking the zipper context back to the root will produce a Tree with any
+updates made as the zipper was walked over the tree, folded back in to the
+new Tree.
 -}
-
-
-
---goToRoot : Zipper a -> ( Tree a, Path )
-
-
+goToRoot : Zipper a -> Zipper a
 goToRoot (Zipper zipper) =
     case zipper.crumbs of
         [] ->
-            Just <| Zipper zipper
+            Zipper zipper
 
         otherwise ->
-            goUp (Zipper zipper) |> Maybe.andThen goToRoot
+            goUp (Zipper zipper)
+                |> Maybe.map goToRoot
+                |> Maybe.withDefault (Zipper zipper)
 
 
 
@@ -192,9 +191,13 @@ goUp (Zipper zipper) =
             Just
                 (Zipper
                     { nextId = zipper.nextId
-                    , currentPath = zipper.currentPath
+                    , currentPath =
+                        case zipper.currentPath of
+                            Path _ [] ->
+                                Path id []
 
-                    --List.head zipper.currentPath |> Maybe.withDefault []
+                            Path _ (_ :: ps) ->
+                                Path id ps
                     , innerTree =
                         InnerTree
                             { id = 0
