@@ -29,6 +29,9 @@ module Tree
 
 -- It will be a multiway Tree implementation, not a binary tree.
 --
+-- Will save this for an optimized version:
+-- type alias NodeArray a =
+--     Array Int a
 
 
 type Path
@@ -39,54 +42,44 @@ type alias Id =
     Int
 
 
-type Tree
+type Tree a
     = Tree
         { nextId : Id
-        , nodeData : NodeArray a
-        , innerTree : InnerTree
+        , innerTree : InnerTree a
         }
 
 
-type InnerTree
+type InnerTree a
     = InnerTree
         { id : Id
-        , children : Forest
+        , datum : a
+        , children : Forest a
         }
 
 
-type alias Forest =
-    List InnerTree
+type alias Forest a =
+    List (InnerTree a)
 
 
-type Context
+type Context a
     = Context
-        { id : Id -- Needed here?
-        , focus : Focus -- At top-level in zipper or here?
-        , pre : Forest
-        , post : Forest
+        { id : Id
+        , datum : a
+        , pre : Forest a
+        , post : Forest a
         }
 
 
-type alias Breadcrumbs =
-    List Context
-
-
-type alias NodeArray a =
-    Array Int a
-
-
-type alias Focus =
-    { nextId : Id
-    , currentPath : Path
-    }
+type alias Breadcrumbs a =
+    List (Context a)
 
 
 type Zipper a
     = Zipper
-        { nextId : Id -- In the focus or here?
-        , nodeData : NodeArray a
-        , innerTree : InnerTree
-        , crumbs : Breadcrumbs
+        { nextId : Id
+        , currentPath : Path
+        , innerTree : InnerTree a
+        , crumbs : Breadcrumbs a
         }
 
 
