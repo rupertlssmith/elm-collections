@@ -163,6 +163,29 @@ update fn tree =
 -- Zipper operations
 
 
+splitOnIndex : Int -> List (InnerTree a) -> Maybe ( Forest a, InnerTree a, Forest a )
+splitOnIndex n xs =
+    let
+        before =
+            List.take n xs
+
+        focus =
+            List.drop n xs |> List.head
+
+        after =
+            List.drop (n + 1) xs
+
+        -- The above seems inneficient unless the compiler is very smart,
+        -- better to write our own loop to iterate the list just once.
+    in
+        case focus of
+            Nothing ->
+                Nothing
+
+            Just f ->
+                Just ( before, f, after )
+
+
 {-| Walking the zipper context back to the root will produce a Tree with any
 updates made as the zipper was walked over the tree, folded back in to the
 new Tree.
@@ -179,8 +202,41 @@ goToRoot (Zipper zipper) =
                 |> Maybe.withDefault (Zipper zipper)
 
 
+goToChild : Int -> Zipper a -> Maybe (Zipper a)
+goToChild n (Zipper zipper) =
+    let
+        (InnerTree inner) =
+            zipper.innerTree
 
--- goToChild : Int -> Zipper a -> Maybe (Zipper a)
+        maybeSplit =
+            splitOnIndex n inner.children
+    in
+        case maybeSplit of
+            Nothing ->
+                Nothing
+
+            Just ( before, focus, after ) ->
+                let
+                    (InnerTree innerFocus) =
+                        focus
+                in
+                    Just
+                        (Zipper
+                            { nextId = zipper.nextId
+                            , currentPath =
+                                case zipper.currentPath of
+                                    Path _ ps ->
+                                        Path innerFocus.id (n :: ps)
+                            , innerTree = focus
+                            , crumbs =
+                                { id = innerFocus.id
+                                , datum = innerFocus.datum
+                                , before = before
+                                , after = after
+                                }
+                                    :: zipper.crumbs
+                            }
+                        )
 
 
 goUp : Zipper a -> Maybe (Zipper a)
@@ -285,7 +341,18 @@ goRight (Zipper zipper) =
 
 -- goToNext : Zipper a -> Maybe (Zipper a)
 -- goToPrevious : Zipper a -> Maybe (Zipper a)
--- goToRightMostChild : Zipper a -> Maybe (Zipper a)
+
+
+goToRightMostChild : Zipper a -> Maybe (Zipper a)
+goToRightMostChild (Zipper zipper) =
+    let
+        (InnerTree inner) =
+            zipper.innerTree
+    in
+        goToChild ((List.length inner.children) - 1) (Zipper zipper)
+
+
+
 -- goTo : (a -> Bool) -> Zipper a -> Maybe (Zipper a)
 
 
