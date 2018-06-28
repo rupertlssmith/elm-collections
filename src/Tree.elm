@@ -287,11 +287,40 @@ goRight (Zipper zipper) =
 -- goToPrevious : Zipper a -> Maybe (Zipper a)
 -- goToRightMostChild : Zipper a -> Maybe (Zipper a)
 -- goTo : (a -> Bool) -> Zipper a -> Maybe (Zipper a)
--- datum : Zipper a -> a
--- updateFocusDatum : (a -> a) -> Zipper a -> Zipper a
+
+
+datum : Zipper a -> a
+datum (Zipper zipper) =
+    let
+        (InnerTree inner) =
+            zipper.innerTree
+    in
+        inner.datum
+
+
+updateFocusDatum : (a -> a) -> Zipper a -> Zipper a
+updateFocusDatum fn (Zipper zipper) =
+    let
+        (InnerTree inner) =
+            zipper.innerTree
+    in
+        Zipper
+            { zipper
+                | innerTree = InnerTree { inner | datum = (fn inner.datum) }
+            }
+
+
+
 -- insertChild : a -> Zipper a -> Zipper a
 -- appendChild : a -> Zipper a -> Zipper a
--- getPath : Zipper a -> Path
+
+
+getPath : Zipper a -> Path
+getPath (Zipper zipper) =
+    zipper.currentPath
+
+
+
 -- Path operations
 {- The Path and Tree can be recombined to recover a previous position in the tree.
    walkPath : Path -> Tree a -> Maybe (Zipper a)
