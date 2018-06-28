@@ -70,13 +70,12 @@ type alias Forest a =
     List (InnerTree a)
 
 
-type Context a
-    = Context
-        { id : Id
-        , datum : a
-        , before : Forest a
-        , after : Forest a
-        }
+type alias Context a =
+    { id : Id
+    , datum : a
+    , before : Forest a
+    , after : Forest a
+    }
 
 
 type alias Breadcrumbs a =
@@ -187,20 +186,21 @@ goToRoot (Zipper zipper) =
 goUp : Zipper a -> Maybe (Zipper a)
 goUp (Zipper zipper) =
     case zipper.crumbs of
-        (Context { id, datum, before, after }) :: bs ->
+        { id, datum, before, after } :: bs ->
             Just
                 (Zipper
                     { nextId = zipper.nextId
                     , currentPath =
                         case zipper.currentPath of
-                            Path _ [] ->
-                                Path id []
-
                             Path _ (_ :: ps) ->
                                 Path id ps
+
+                            _ ->
+                                -- This branch should never happen.
+                                Path -1 []
                     , innerTree =
                         InnerTree
-                            { id = 0
+                            { id = id
                             , datum = datum
                             , children = (before ++ [ zipper.innerTree ] ++ after)
                             }
@@ -215,13 +215,33 @@ goUp (Zipper zipper) =
 goLeft : Zipper a -> Maybe (Zipper a)
 goLeft (Zipper zipper) =
     case zipper.crumbs of
-        (Context { id, datum, before, after }) :: bs ->
+        { id, datum, before, after } :: bs ->
             case List.reverse before of
                 [] ->
                     Nothing
 
                 (InnerTree inner) :: rest ->
-                    Nothing
+                    Just
+                        (Zipper
+                            { nextId = zipper.nextId
+                            , currentPath =
+                                case zipper.currentPath of
+                                    Path _ (p :: ps) ->
+                                        Path inner.id (p - 1 :: ps)
+
+                                    _ ->
+                                        -- This branch should never happen.
+                                        Path -1 []
+                            , innerTree = InnerTree inner
+                            , crumbs =
+                                { id = id
+                                , datum = datum
+                                , before = List.reverse rest
+                                , after = zipper.innerTree :: after
+                                }
+                                    :: bs
+                            }
+                        )
 
         [] ->
             Nothing
@@ -230,13 +250,33 @@ goLeft (Zipper zipper) =
 goRight : Zipper a -> Maybe (Zipper a)
 goRight (Zipper zipper) =
     case zipper.crumbs of
-        (Context { id, datum, before, after }) :: bs ->
+        { id, datum, before, after } :: bs ->
             case after of
                 [] ->
                     Nothing
 
                 (InnerTree inner) :: rest ->
-                    Nothing
+                    Just
+                        (Zipper
+                            { nextId = zipper.nextId
+                            , currentPath =
+                                case zipper.currentPath of
+                                    Path _ (p :: ps) ->
+                                        Path inner.id (p + 1 :: ps)
+
+                                    _ ->
+                                        -- This branch should never happen.
+                                        Path -1 []
+                            , innerTree = InnerTree inner
+                            , crumbs =
+                                { id = id
+                                , datum = datum
+                                , before = before ++ [ zipper.innerTree ]
+                                , after = rest
+                                }
+                                    :: bs
+                            }
+                        )
 
         [] ->
             Nothing
