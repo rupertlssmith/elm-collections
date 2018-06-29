@@ -127,6 +127,14 @@ zipper (Tree tree) =
         }
 
 
+treeAtZipper : Zipper a -> Tree a
+treeAtZipper (Zipper zipper) =
+    Tree
+        { nextId = zipper.nextId
+        , innerTree = zipper.innerTree
+        }
+
+
 mapInner : (a -> b) -> InnerTree a -> InnerTree b
 mapInner fn (InnerTree tree) =
     let
@@ -492,20 +500,20 @@ getPath (Zipper zipper) =
 
 
 -- Path operations
-{- The Path and Tree can be recombined to recover a previous position in the tree.
-   walkPath : Path -> Tree a -> Maybe (Zipper a)
 
-   Every node will be marked with a unique id, so that re-walking the tree from a Path
-   can be confirmed as correct. Walking a Path will produce a Maybe.
 
-   This allows events to be tagged with Paths which describe a return to a
-   previously visited position within a tree, without capturing any other data
-   associated with that node. This is to circumvent the stale data issue when
-   a user is interacting with a tree.
+{-| The Path and Tree can be recombined to recover a previous position in the tree.
+walkPath : Path -> Tree a -> Maybe (Zipper a)
+
+Every node will be marked with a unique id, so that re-walking the tree from a Path
+can be confirmed as correct. Walking a Path will produce a Maybe.
+
+This allows events to be tagged with Paths which describe a return to a
+previously visited position within a tree, without capturing any other data
+associated with that node. This is to circumvent the stale data issue when
+a user is interacting with a tree.
 
 -}
-
-
 goToPath : Path -> Tree a -> Maybe (Zipper a)
 goToPath path tree =
     let
@@ -536,10 +544,16 @@ goToPath path tree =
         walk steps (zipper tree |> Just)
 
 
-
-{- The contents of nodes in the tree will be held in an `Array Id a`. Ids will be assigned
-   sequentially. This will allow mapping by id without re-walking a Path possible. It will
-   only be necessary to re-walk paths when adding new nodes into the tree, as this is the only
-   situation when fresh ids will need to be generated.
+{-| The contents of nodes in the tree will be held in an `Array Id a`. Ids will be assigned
+sequentially. This will allow mapping by id without re-walking a Path possible. It will
+only be necessary to re-walk paths when adding new nodes into the tree, as this is the only
+situation when fresh ids will need to be generated.
 -}
--- updateDatum : Path -> (a -> a) -> Tree a -> Tree a
+updateDatum : Path -> (a -> a) -> Tree a -> Tree a
+updateDatum path fn tree =
+    goToPath path tree
+        |> Maybe.map (updateFocusDatum fn)
+        |> Maybe.map goToRoot
+        |> Maybe.map treeAtZipper
+        -- Silent fail if the path is wrong.
+        |> Maybe.withDefault tree
