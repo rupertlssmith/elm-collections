@@ -32,6 +32,10 @@ module Tree
 -- Will save this for an optimized version:
 -- type alias NodeArray a =
 --     Array Int a
+--
+-- Need to add API for simpler read-only walking of the tree. Zippers will churn
+-- the heap, but a read only pass for rendering the view does not need them so
+-- can be made more efficient.
 
 
 type alias Id =
