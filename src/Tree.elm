@@ -14,9 +14,9 @@ module Tree
         , goLeft
         , goRight
         , goToRoot
-          -- , goToNext
-          -- , goToPrevious
-          -- , goTo
+        , goToNext
+        , goToPrevious
+        , goTo
         , updateFocusDatum
         , datum
           -- , insertChild
@@ -99,7 +99,7 @@ getNextId id =
 -- Tree operations
 
 
-singleton : a -> Tree a
+singleton : a -> Zipper a
 singleton datum =
     Tree
         { nextId = 0
@@ -110,6 +110,7 @@ singleton datum =
                 , children = []
                 }
         }
+        |> zipper
 
 
 zipper : Tree a -> Zipper a
@@ -153,6 +154,24 @@ map fn (Tree tree) =
             , innerTree = mappedInner
             }
         )
+
+
+mkNode datum id =
+    InnerTree
+        { id = id
+        , datum = datum
+        , children = []
+        }
+
+
+insertNodeToTree : a -> Id -> InnerTree a -> InnerTree a
+insertNodeToTree childDatum childId (InnerTree { id, datum, children }) =
+    InnerTree { id = id, datum = datum, children = (mkNode childDatum childId) :: children }
+
+
+appendNodeToTree : a -> Id -> InnerTree a -> InnerTree a
+appendNodeToTree childDatum childId (InnerTree { id, datum, children }) =
+    InnerTree { id = id, datum = datum, children = children ++ [ (mkNode childDatum childId) ] }
 
 
 {-| This operation may be faster than `map` when the type of the tree does not change.
@@ -342,9 +361,57 @@ goRight (Zipper zipper) =
             Nothing
 
 
+goToNext : Zipper a -> Maybe (Zipper a)
+goToNext zipper =
+    let
+        upAndOver zipper =
+            case goUp zipper of
+                Nothing ->
+                    Nothing
 
--- goToNext : Zipper a -> Maybe (Zipper a)
--- goToPrevious : Zipper a -> Maybe (Zipper a)
+                Just zipper_ ->
+                    case goRight zipper_ of
+                        Nothing ->
+                            upAndOver zipper_
+
+                        zipper__ ->
+                            zipper__
+    in
+        case goToChild 0 zipper of
+            Just zipper_ ->
+                Just zipper_
+
+            Nothing ->
+                case goRight zipper of
+                    Just zipper_ ->
+                        Just zipper_
+
+                    Nothing ->
+                        case upAndOver zipper of
+                            Nothing ->
+                                Nothing
+
+                            zipper_ ->
+                                zipper_
+
+
+goToPrevious : Zipper a -> Maybe (Zipper a)
+goToPrevious zipper =
+    let
+        recurseDownAndRight zipper_ =
+            case goToRightMostChild zipper_ of
+                Just zipper__ ->
+                    recurseDownAndRight zipper__
+
+                Nothing ->
+                    Just zipper_
+    in
+        case goLeft zipper of
+            Just zipper_ ->
+                recurseDownAndRight zipper_
+
+            Nothing ->
+                goUp zipper
 
 
 goToRightMostChild : Zipper a -> Maybe (Zipper a)
@@ -356,8 +423,16 @@ goToRightMostChild (Zipper zipper) =
         goToChild ((List.length inner.children) - 1) (Zipper zipper)
 
 
-
--- goTo : (a -> Bool) -> Zipper a -> Maybe (Zipper a)
+goTo : (a -> Bool) -> Zipper a -> Maybe (Zipper a)
+goTo predicate zipper =
+    let
+        goToElementOrNext zipper_ =
+            if predicate (datum zipper) then
+                Just zipper_
+            else
+                goToNext zipper_ |> Maybe.andThen goToElementOrNext
+    in
+        (goToRoot zipper) |> goToElementOrNext
 
 
 datum : Zipper a -> a
@@ -381,9 +456,32 @@ updateFocusDatum fn (Zipper zipper) =
             }
 
 
+insertChild : a -> Zipper a -> Zipper a
+insertChild child (Zipper { nextId, currentPath, innerTree, crumbs }) =
+    let
+        steppedId =
+            nextId + 1
+    in
+        Zipper
+            { nextId = steppedId
+            , currentPath = currentPath
+            , innerTree = insertNodeToTree child nextId innerTree
+            , crumbs = crumbs
+            }
 
--- insertChild : a -> Zipper a -> Zipper a
--- appendChild : a -> Zipper a -> Zipper a
+
+appendChild : a -> Zipper a -> Zipper a
+appendChild child (Zipper { nextId, currentPath, innerTree, crumbs }) =
+    let
+        steppedId =
+            nextId + 1
+    in
+        Zipper
+            { nextId = steppedId
+            , currentPath = currentPath
+            , innerTree = appendNodeToTree child nextId innerTree
+            , crumbs = crumbs
+            }
 
 
 getPath : Zipper a -> Path
