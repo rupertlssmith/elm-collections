@@ -8,23 +8,23 @@ module Tree
         , zipper
         , map
           -- Zipper operations
-          --, goToChild
-          --, goToRightMostChild
+        , goToChild
+        , goToRightMostChild
         , goUp
-          --, goLeft
-          --, goRight
+        , goLeft
+        , goRight
         , goToRoot
-          --, goToNext
-          --, goToPrevious
-          --, goTo
-          --, updateFocusDatum
-          --, datum
-          --, insertChild
-          --, updateChildren
-          --, getPath
+          -- , goToNext
+          -- , goToPrevious
+          -- , goTo
+        , updateFocusDatum
+        , datum
+          -- , insertChild
+          -- , updateChildren
+        , getPath
           -- Path operations
-          --, goToPath
-          --, updateDatum
+          -- , goToPath
+          -- , updateDatum
         )
 
 -- It will be a multiway Tree implementation, not a binary tree.
