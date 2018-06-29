@@ -19,8 +19,9 @@ module Tree
         , goTo
         , updateFocusDatum
         , datum
-          -- , insertChild
-          -- , updateChildren
+        , insertChild
+        , appendChild
+          --, updateChildren
         , getPath
           -- Path operations
           -- , goToPath
