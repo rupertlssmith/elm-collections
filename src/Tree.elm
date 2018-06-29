@@ -24,8 +24,8 @@ module Tree
           --, updateChildren
         , getPath
           -- Path operations
-          -- , goToPath
-          -- , updateDatum
+        , goToPath
+        , updateDatum
         )
 
 -- It will be a multiway Tree implementation, not a binary tree.
