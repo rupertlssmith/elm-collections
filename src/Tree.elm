@@ -504,7 +504,39 @@ getPath (Zipper zipper) =
    a user is interacting with a tree.
 
 -}
--- goToPath : Path -> Tree a -> Maybe (Zipper a)
+
+
+goToPath : Path -> Tree a -> Maybe (Zipper a)
+goToPath path tree =
+    let
+        (Path _ steps) =
+            path
+
+        walk : List Int -> Maybe (Zipper a) -> Maybe (Zipper a)
+        walk steps zipper =
+            case ( steps, zipper ) of
+                ( [], Just zipper_ ) ->
+                    zipper
+
+                ( n :: ns, Just zipper_ ) ->
+                    let
+                        maybeChildZipper =
+                            goToChild n zipper_
+                    in
+                        case maybeChildZipper of
+                            Nothing ->
+                                Nothing
+
+                            Just zipper__ ->
+                                walk ns (Just zipper__)
+
+                ( _, Nothing ) ->
+                    Nothing
+    in
+        walk steps (zipper tree |> Just)
+
+
+
 {- The contents of nodes in the tree will be held in an `Array Id a`. Ids will be assigned
    sequentially. This will allow mapping by id without re-walking a Path possible. It will
    only be necessary to re-walk paths when adding new nodes into the tree, as this is the only
